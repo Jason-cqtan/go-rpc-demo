@@ -31,6 +31,15 @@ func (h hello) SayHello(name string) (string, error) {
 	return string(s), nil
 }
 
+// 假如有个雷同的方法，需要修改上面方法某些参数
+// 最直接是复制一遍新写（不推荐）
+// 另一种方法是利用反射
+// 反射一种运行时获得一些运行程序本身信息的机制
+//
+//首先，获得方法原本的信息
+//
+//其次，将方法的内容，改为http调用的内容
+
 func main() {
 	h := hello{
 		host: "http://localhost:8080/",
