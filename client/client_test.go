@@ -1,10 +1,10 @@
 package main
 
 import (
-	"fmt"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestSetFuncField(t *testing.T) {
-	fmt.Println("success")
+	assert.Nil(t, hello{},"dsfs")
 }
