@@ -12,11 +12,11 @@ type HelloService interface {
 }
 
 type hello struct {
-	host string
-	FuncField func()
+	host      string
+	FuncField func(name string) (string, error)
 }
 
-func (h *hello) SayHello(name string) (string, error) {
+func (h hello) SayHello(name string) (string, error) {
 	client := http.Client{}
 	r, err := client.Get(h.host + name)
 	if err != nil {
@@ -39,29 +39,33 @@ func SetFuncField(val interface{}) {
 	// ValueOf 获得对象运行时表示，例如有啥字段，字段的值是啥
 	//t := reflect.TypeOf(val)
 	v := reflect.ValueOf(val)
-	ele := v.Elem()// 指针指向的结构体
-	t := ele.Type()// 指针指向结构体的类型信息
+	ele := v.Elem() // 指针指向的结构体
+	t := ele.Type() // 指针指向结构体的类型信息
 	// NumMethod只能返回公共方法
 	num := t.NumField()
 	for i := 0; i < num; i++ {
-		//field := t.Field(i)
-		fieldValue := ele.Field(i)// 用指针指向的结构体来访问
+		field := t.Field(i)
+		fieldValue := ele.Field(i) // 用指针指向的结构体来访问
 		if fieldValue.CanSet() {
-			fieldValue.Set(reflect.ValueOf(func() {
-				//fmt.Println("篡改的方法",field.Name)
+
+			fn := func(args []reflect.Value) (result []reflect.Value) {
+				name := args[0].Interface().(string)
+
 				client := http.Client{}
-				r, err := client.Get("http://localhost:8080/reflect")
+				r, err := client.Get("http://localhost:8080/" + name)
 				if err != nil {
-					fmt.Println(err)
+					return []reflect.Value{reflect.ValueOf(""), reflect.ValueOf(err)}
 				}
 
 				s, err := ioutil.ReadAll(r.Body)
 				if err != nil {
-					fmt.Println(err)
+					return []reflect.Value{reflect.ValueOf(""), reflect.ValueOf(err)}
 				}
+				return []reflect.Value{reflect.ValueOf(string(s)), reflect.Zero(reflect.TypeOf(new(error)).Elem())}
+			}
 
-				fmt.Println(string(s))
-			}))
+			fieldValue.Set(reflect.MakeFunc(field.Type, fn))
+
 		}
 	}
 }
@@ -87,5 +91,7 @@ func main() {
 	fmt.Println(str)
 
 	SetFuncField(h)
-	h.FuncField()
+	msg, _ := h.FuncField("relect")
+	fmt.Println(msg)
+
 }
