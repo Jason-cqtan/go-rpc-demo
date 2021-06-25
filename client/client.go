@@ -35,12 +35,17 @@ func (h hello) SayHello(name string) (string, error) {
 
 func PrintParams(val interface{}) {
 	// 反射
-	t := reflect.TypeOf(val)
+	// TypeOf 获得对象的类型信息，例如该类型（结构体）有啥字段，字段是啥类型
+	// ValueOf 获得对象运行时表示，例如有啥字段，字段的值是啥
+	//t := reflect.TypeOf(val)
+	v := reflect.ValueOf(val)
 	// NumMethod只能返回公共方法
-	num := t.NumField()
+	num := v.NumField()
 	for i := 0; i < num; i++ {
-		m := t.Field(i)
-		fmt.Println(m.Name)
+		m := v.Field(i)
+		if m.CanSet() {
+			fmt.Println("can set")
+		}
 	}
 }
 
