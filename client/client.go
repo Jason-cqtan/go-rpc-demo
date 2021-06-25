@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"reflect"
 )
 
 type HelloService interface {
@@ -31,6 +32,16 @@ func (h hello) SayHello(name string) (string, error) {
 	return string(s), nil
 }
 
+func PrintParams(val interface{}) {
+	// 反射
+	t := reflect.TypeOf(val)
+	num := t.NumMethod()
+	for i := 0; i < num; i++ {
+		m := t.Method(i)
+		fmt.Println(m.Name)
+	}
+}
+
 // 假如有个雷同的方法，需要修改上面方法某些参数
 // 最直接是复制一遍新写（不推荐）
 // 另一种方法是利用反射
@@ -50,4 +61,6 @@ func main() {
 		return
 	}
 	fmt.Println(str)
+
+	PrintParams(h)
 }
