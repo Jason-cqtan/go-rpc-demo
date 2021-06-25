@@ -59,7 +59,7 @@ func PrintParams(val interface{}) {
 //其次，将方法的内容，改为http调用的内容
 
 func main() {
-	h := hello{
+	h := &hello{
 		host: "http://localhost:8080/",
 	}
 	str, err := h.SayHello("golang")
