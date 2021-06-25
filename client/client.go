@@ -44,11 +44,23 @@ func SetFuncField(val interface{}) {
 	// NumMethod只能返回公共方法
 	num := t.NumField()
 	for i := 0; i < num; i++ {
-		field := t.Field(i)
+		//field := t.Field(i)
 		fieldValue := ele.Field(i)// 用指针指向的结构体来访问
 		if fieldValue.CanSet() {
 			fieldValue.Set(reflect.ValueOf(func() {
-				fmt.Println("篡改的方法",field.Name)
+				//fmt.Println("篡改的方法",field.Name)
+				client := http.Client{}
+				r, err := client.Get("http://localhost:8080/reflect")
+				if err != nil {
+					fmt.Println(err)
+				}
+
+				s, err := ioutil.ReadAll(r.Body)
+				if err != nil {
+					fmt.Println(err)
+				}
+
+				fmt.Println(string(s))
 			}))
 		}
 	}
