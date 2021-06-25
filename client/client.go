@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -13,10 +15,20 @@ type HelloService interface {
 
 type hello struct {
 	host      string
-	FuncField func(name string) (string, error)
+	FuncField func(in *Input) (*Output, error)
 }
 
-func (h hello) SayHello(name string) (string, error) {
+
+type Input struct {
+	Name string
+}
+
+type Output struct {
+	Msg string
+}
+
+
+func (h *hello) SayHello(name string) (string, error) {
 	client := http.Client{}
 	r, err := client.Get(h.host + name)
 	if err != nil {
@@ -49,19 +61,28 @@ func SetFuncField(val interface{}) {
 		if fieldValue.CanSet() {
 
 			fn := func(args []reflect.Value) (result []reflect.Value) {
-				name := args[0].Interface().(string)
+				in := args[0].Interface()
+				out := reflect.New(field.Type.Out(0).Elem()).Interface()
+				inData, err := json.Marshal(in)
+				if err != nil {
+					return []reflect.Value{reflect.ValueOf(out), reflect.ValueOf(err)}
+				}
 
 				client := http.Client{}
-				r, err := client.Get("http://localhost:8080/" + name)
+				r, err := client.Post("http://localhost:8080/", "application/json", bytes.NewReader(inData))
 				if err != nil {
-					return []reflect.Value{reflect.ValueOf(""), reflect.ValueOf(err)}
+					return []reflect.Value{reflect.ValueOf(out), reflect.ValueOf(err)}
 				}
 
-				s, err := ioutil.ReadAll(r.Body)
+				data, err := ioutil.ReadAll(r.Body)
 				if err != nil {
-					return []reflect.Value{reflect.ValueOf(""), reflect.ValueOf(err)}
+					return []reflect.Value{reflect.ValueOf(out), reflect.ValueOf(err)}
 				}
-				return []reflect.Value{reflect.ValueOf(string(s)), reflect.Zero(reflect.TypeOf(new(error)).Elem())}
+				err = json.Unmarshal(data, out)
+				if err != nil {
+					return []reflect.Value{reflect.ValueOf(out), reflect.ValueOf(err)}
+				}
+				return []reflect.Value{reflect.ValueOf(out), reflect.Zero(reflect.TypeOf(new(error)).Elem())}
 			}
 
 			fieldValue.Set(reflect.MakeFunc(field.Type, fn))
@@ -91,7 +112,9 @@ func main() {
 	fmt.Println(str)
 
 	SetFuncField(h)
-	msg, _ := h.FuncField("relect")
+	msg, _ := h.FuncField(&Input{
+		Name: "reflect",
+	})
 	fmt.Println(msg)
 
 }
