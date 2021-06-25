@@ -13,6 +13,7 @@ type HelloService interface {
 
 type hello struct {
 	host string
+	FuncField func()
 }
 
 func (h hello) SayHello(name string) (string, error) {
@@ -35,9 +36,10 @@ func (h hello) SayHello(name string) (string, error) {
 func PrintParams(val interface{}) {
 	// 反射
 	t := reflect.TypeOf(val)
-	num := t.NumMethod()
+	// NumMethod只能返回公共方法
+	num := t.NumField()
 	for i := 0; i < num; i++ {
-		m := t.Method(i)
+		m := t.Field(i)
 		fmt.Println(m.Name)
 	}
 }
