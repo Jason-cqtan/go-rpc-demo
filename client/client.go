@@ -16,7 +16,7 @@ type hello struct {
 	FuncField func()
 }
 
-func (h hello) SayHello(name string) (string, error) {
+func (h *hello) SayHello(name string) (string, error) {
 	client := http.Client{}
 	r, err := client.Get(h.host + name)
 	if err != nil {
@@ -39,12 +39,15 @@ func PrintParams(val interface{}) {
 	// ValueOf 获得对象运行时表示，例如有啥字段，字段的值是啥
 	//t := reflect.TypeOf(val)
 	v := reflect.ValueOf(val)
+	ele := v.Elem()// 指针指向的结构体
+	t := ele.Type()// 指针指向结构体的类型信息
 	// NumMethod只能返回公共方法
-	num := v.NumField()
+	num := t.NumField()
 	for i := 0; i < num; i++ {
-		m := v.Field(i)
-		if m.CanSet() {
-			fmt.Println("can set")
+		field := t.Field(i)
+		fieldValue := ele.Field(i)// 用指针指向的结构体来访问
+		if fieldValue.CanSet() {
+			fmt.Println("can set",field.Name)
 		}
 	}
 }
