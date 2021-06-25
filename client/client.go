@@ -33,7 +33,7 @@ func (h *hello) SayHello(name string) (string, error) {
 	return string(s), nil
 }
 
-func PrintParams(val interface{}) {
+func SetFuncField(val interface{}) {
 	// 反射
 	// TypeOf 获得对象的类型信息，例如该类型（结构体）有啥字段，字段是啥类型
 	// ValueOf 获得对象运行时表示，例如有啥字段，字段的值是啥
@@ -47,7 +47,9 @@ func PrintParams(val interface{}) {
 		field := t.Field(i)
 		fieldValue := ele.Field(i)// 用指针指向的结构体来访问
 		if fieldValue.CanSet() {
-			fmt.Println("can set",field.Name)
+			fieldValue.Set(reflect.ValueOf(func() {
+				fmt.Println("篡改的方法",field.Name)
+			}))
 		}
 	}
 }
@@ -72,5 +74,6 @@ func main() {
 	}
 	fmt.Println(str)
 
-	PrintParams(h)
+	SetFuncField(h)
+	h.FuncField()
 }
