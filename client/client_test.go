@@ -1,10 +1,44 @@
 package main
 
 import (
-	"github.com/stretchr/testify/assert"
+	"errors"
+	"fmt"
 	"testing"
 )
 
 func TestSetFuncField(t *testing.T) {
-	assert.Nil(t, hello{},"dsfs")
+	//assert.Nil(t, hello{}, "dsfs")
+
+	s := []interface{}{0, 1, 2, 3, 5}
+
+	newAdd, _ := Add(s, 4, 5)
+	fmt.Println(newAdd)
+	newDelete, _ := Delete(s, 5)
+	fmt.Println(newDelete)
+}
+
+
+// 指定索引添加元素
+func Add(values []interface{}, value interface{}, index int) ([]interface{}, error) {
+	if index < 0 || index >= len(values) {
+		return nil, errors.New("index 非法")
+	}
+	var res []interface{}
+	for i := 0; i < index; i++ {
+		res = append(res, values[i])
+	}
+	res = append(res, value)
+
+	res = append(res, values[index:]...)
+	return res, nil
+}
+
+// 指定索引删除元素
+func Delete(values []interface{}, index int) ([]interface{}, error) {
+	if index < 0 || index >= len(values) {
+		return nil,errors.New("index 非法")
+	}
+	var res []interface{}
+	res = append(values[:index], values[index+1:]...)
+	return res, nil
 }
