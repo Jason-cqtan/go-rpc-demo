@@ -3,49 +3,25 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"reflect"
 )
 
-type HelloService interface {
-	SayHello(name string) (string error)
-}
-
-type hello struct {
-	host      string
-	FuncField func(in *Input) (*Output, error)
-}
-
-
-type Input struct {
-	Name string
-}
-
-type Output struct {
-	Msg string
-}
-
-
-func (h *hello) SayHello(name string) (string, error) {
-	client := http.Client{}
-	r, err := client.Get(h.host + name)
+func main() {
+	ycp, err := NewYamlConfigProvider("")
 	if err != nil {
-		fmt.Println(err)
-		return "", err
+		panic("配置文件未找到")
 	}
 
-	s, err := ioutil.ReadAll(r.Body)
+	err = InitApplication(WithCfgProvider(ycp))
 	if err != nil {
-		fmt.Println(err)
-		return "", err
+		panic("初始化应用失败")
 	}
 
-	return string(s), nil
 }
 
-func SetFuncField(val interface{}) {
+func SetFuncField(val Service) {
 	// 反射
 	// TypeOf 获得对象的类型信息，例如该类型（结构体）有啥字段，字段是啥类型
 	// ValueOf 获得对象运行时表示，例如有啥字段，字段的值是啥
@@ -69,12 +45,29 @@ func SetFuncField(val interface{}) {
 				}
 
 				client := http.Client{}
-				r, err := client.Post("http://localhost:8080/", "application/json", bytes.NewReader(inData))
+
+				serviceName := val.ServiceName()
+				cfg, err := App.CfgProvider.GetServiceConfig(serviceName)
+
 				if err != nil {
 					return []reflect.Value{reflect.ValueOf(out), reflect.ValueOf(err)}
 				}
 
-				data, err := ioutil.ReadAll(r.Body)
+				req, err := http.NewRequest("POST", cfg.Endpoint, bytes.NewReader(inData))
+				if err != nil {
+					return []reflect.Value{reflect.ValueOf(out), reflect.ValueOf(err)}
+				}
+
+				req.Header.Set("Content-Type", "application/json")
+				req.Header.Set("sparrow-service", serviceName)
+				req.Header.Set("sparrow-service-method", field.Name)
+
+				resp, err := client.Do(req)
+
+				if err != nil {
+					return []reflect.Value{reflect.ValueOf(out), reflect.ValueOf(err)}
+				}
+				data, err := ioutil.ReadAll(resp.Body)
 				if err != nil {
 					return []reflect.Value{reflect.ValueOf(out), reflect.ValueOf(err)}
 				}
@@ -91,30 +84,6 @@ func SetFuncField(val interface{}) {
 	}
 }
 
-// 假如有个雷同的方法，需要修改上面方法某些参数
-// 最直接是复制一遍新写（不推荐）
-// 另一种方法是利用反射
-// 反射一种运行时获得一些运行程序本身信息的机制
-//
-//首先，获得方法原本的信息
-//
-//其次，将方法的内容，改为http调用的内容
-
-func main() {
-	h := &hello{
-		host: "http://localhost:8080/",
-	}
-	str, err := h.SayHello("golang")
-	if err != nil {
-		fmt.Println(err.Error())
-		return
-	}
-	fmt.Println(str)
-
-	SetFuncField(h)
-	msg, _ := h.FuncField(&Input{
-		Name: "reflect",
-	})
-	fmt.Println(msg)
-
+type Service interface {
+	ServiceName() string
 }

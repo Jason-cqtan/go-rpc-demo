@@ -1,34 +1,33 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 )
 
-type Input struct {
-	Name string
-}
+func handler(w http.ResponseWriter, r *http.Request) {
+	data, _ := ioutil.ReadAll(r.Body)
+	serviceName := r.Header.Get("sparrow-service")
+	methodName := r.Header.Get("sparrow-service-method")
 
-type Output struct {
-	Msg string
-}
-
-func myHandler(w http.ResponseWriter, r *http.Request) {
-	data,_ := ioutil.ReadAll(r.Body)
-	input := &Input{}
-	_ = json.Unmarshal(data,input)
-	output, _ := json.Marshal(&Output{
-		Msg: "hello, " + input.Name,
+	filterIvk := &filterInvoker{
+		Invoker: &httpInvoker{},
+		filters: []Filter{logFilter},
+	}
+	output, _ := filterIvk.Invoke(&Invocation{
+		MethodName:  methodName,
+		ServiceName: serviceName,
+		Input:       data,
 	})
-
-	fmt.Fprintf(w,"%s",string(output))
+	fmt.Fprintf(w, "%s", string(output))
 }
 
+// 启动服务器
 func main() {
-	http.HandleFunc("/", myHandler)
+	AddService(&userService{})
+	AddService(&helloService{})
+	http.HandleFunc("/", handler)
 	log.Fatal(http.ListenAndServe(":8080", nil))
-	fmt.Println("server")
 }

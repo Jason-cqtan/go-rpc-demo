@@ -2,33 +2,45 @@ package main
 
 import (
 	"errors"
-	"fmt"
-	"reflect"
+	"github.com/stretchr/testify/assert"
 	"sync"
 	"testing"
 )
 
 func TestSetFuncField(t *testing.T) {
-	//assert.Nil(t, hello{}, "dsfs")
 
-	s := []interface{}{0, 1, 2, 3, 5}
+	path := `../test/client.yaml`
+	ycp, _ := NewYamlConfigProvider(path)
 
-	newAdd, _ := Add(s, 4, 5)
-	fmt.Println(newAdd)
-	newDelete, _ := Delete(s, 5)
-	fmt.Println(newDelete)
+	_ = InitApplication(WithCfgProvider(ycp))
 
-	u := &User{}
-	v := reflect.ValueOf(u).Elem()
-	v.FieldByName("Name").SetString("tome")
-	v.FieldByName("Age").SetInt(18)
-	v.FieldByName("Say").Set(reflect.MakeFunc(v.FieldByName("Say").Type(), func(args []reflect.Value) (results []reflect.Value) {
-		fmt.Println("hello world")
-		return []reflect.Value{reflect.ValueOf([]interface{}{})}
-	}))
-	res := u.Say()
-	fmt.Println(res)
-	fmt.Println(u)
+	helloService := &hello{
+	}
+
+	SetFuncField(helloService)
+
+	res, err := helloService.SayHello(&Input{
+		Name: "golang",
+	})
+
+	assert.Nil(t, err)
+	assert.Equal(t, "Hello, golang", res.Msg)
+}
+
+type hello struct {
+	SayHello func(in *Input) (*Output, error)
+}
+
+func (h hello) ServiceName() string {
+	return "hello"
+}
+
+type Input struct {
+	Name string
+}
+
+type Output struct {
+	Msg string
 }
 
 // 指定索引添加元素
