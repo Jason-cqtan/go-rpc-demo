@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"sync"
 	"testing"
 )
 
@@ -59,4 +60,55 @@ type User struct {
 	Name string
 	Age  int
 	Say  func() []interface{}
+}
+
+type HashSet interface {
+	Set(key string)
+	Size() int
+	Exist(key string) bool
+}
+
+type hashset struct {
+	m map[string]interface{}
+}
+
+func (h *hashset) Set(key string) {
+	h.m[key] = ""
+
+}
+
+func (h *hashset) Size() int {
+	// len array slice map
+	// cap array slice channel
+	// for range array slice map
+	return len(h.m)
+}
+
+func (h *hashset) Exist(key string) bool {
+	_, ok := h.m[key]
+	return ok
+}
+
+// 装饰器，hashset接口
+type safeset struct {
+	HashSet
+	mutex sync.RWMutex
+}
+
+func (s *safeset) Size() int {
+	s.mutex.RLocker()
+	defer s.mutex.RUnlock()
+	return s.HashSet.Size()
+}
+
+func (s *safeset) Set(key string) {
+	s.mutex.Unlock()
+	defer s.mutex.Unlock()
+	s.HashSet.Set(key)
+}
+
+func (s *safeset) Exist(key string) bool {
+	s.mutex.RUnlock()
+	defer s.mutex.RUnlock()
+	return s.HashSet.Exist(key)
 }
